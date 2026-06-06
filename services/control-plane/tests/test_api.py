@@ -22,6 +22,7 @@ def test_root_page() -> None:
     assert "/docs" in response.text
     assert "现在关注" in response.text
     assert "创建任务" in response.text
+    assert "Gemma 本地助手" in response.text
     assert "高级设置" in response.text
     assert "执行日志" in response.text
     assert "taskForm" in response.text

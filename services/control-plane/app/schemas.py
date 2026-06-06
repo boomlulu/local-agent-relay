@@ -22,7 +22,7 @@ class TaskStatus(str, Enum):
 class CreateTaskRequest(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     instruction: str = Field(min_length=1)
-    executor: Literal["shell"] = "shell"
+    executor: Literal["gemma", "shell"] = "gemma"
     command: str | None = None
     project_root: str | None = None
     pipeline: str | None = None
@@ -56,4 +56,3 @@ class LogRecord(BaseModel):
 
 class TaskWithLogs(TaskRecord):
     logs: list[LogRecord]
-

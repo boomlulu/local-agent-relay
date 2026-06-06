@@ -237,6 +237,10 @@ def render_dashboard() -> str:
             padding: 0 16px 16px;
           }
 
+          [hidden] {
+            display: none !important;
+          }
+
           .task-list {
             display: grid;
             gap: 8px;
@@ -389,11 +393,11 @@ def render_dashboard() -> str:
             <form id="taskForm">
               <label>
                 标题
-                <input id="title" name="title" value="hello shell" autocomplete="off" required>
+                <input id="title" name="title" value="问 Gemma" autocomplete="off" required>
               </label>
               <label>
                 想让 Agent 做什么
-                <textarea id="instruction" name="instruction" required>verify the local control plane can execute a command</textarea>
+                <textarea id="instruction" name="instruction" required>告诉我现在几点了</textarea>
               </label>
               <button id="submitButton" class="primary" type="submit">创建并执行</button>
             </form>
@@ -403,13 +407,16 @@ def render_dashboard() -> str:
                 <label>
                   Executor
                   <select id="executor" name="executor">
+                    <option value="gemma" selected>Gemma 本地助手</option>
                     <option value="shell">shell</option>
                   </select>
                 </label>
-                <label style="margin-top: 12px;">
-                  Shell Command
-                  <textarea id="command" name="command">echo task:$LOCAL_AGENT_RELAY_TASK_ID && echo instruction:$LOCAL_AGENT_RELAY_INSTRUCTION</textarea>
-                </label>
+                <div id="shellSettings" hidden>
+                  <label style="margin-top: 12px;">
+                    Shell Command
+                    <textarea id="command" name="command">echo task:$LOCAL_AGENT_RELAY_TASK_ID && echo instruction:$LOCAL_AGENT_RELAY_INSTRUCTION</textarea>
+                  </label>
+                </div>
               </div>
             </details>
             <div id="formError" class="error" hidden></div>
@@ -454,6 +461,8 @@ def render_dashboard() -> str:
           const focusStatus = document.querySelector("#focusStatus");
           const focusTitle = document.querySelector("#focusTitle");
           const focusMessage = document.querySelector("#focusMessage");
+          const executorSelect = document.querySelector("#executor");
+          const shellSettings = document.querySelector("#shellSettings");
 
           function escapeHtml(value) {
             return String(value ?? "")
@@ -646,8 +655,10 @@ def render_dashboard() -> str:
                 title: document.querySelector("#title").value,
                 instruction: document.querySelector("#instruction").value,
                 executor: document.querySelector("#executor").value,
-                command: document.querySelector("#command").value,
               };
+              if (payload.executor === "shell") {
+                payload.command = document.querySelector("#command").value;
+              }
               const task = await fetchJson("/tasks", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -671,6 +682,9 @@ def render_dashboard() -> str:
           focusRefreshButton.addEventListener("click", () => refresh().catch(console.error));
           focusInspectButton.addEventListener("click", () => {
             document.querySelector("#taskDetail").scrollIntoView({behavior: "smooth", block: "start"});
+          });
+          executorSelect.addEventListener("change", () => {
+            shellSettings.hidden = executorSelect.value !== "shell";
           });
 
           async function startPolling() {

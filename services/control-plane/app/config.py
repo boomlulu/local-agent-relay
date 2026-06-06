@@ -28,3 +28,17 @@ def default_workdir() -> Path:
         return Path(configured).expanduser().resolve()
     return repo_root()
 
+
+def gemma_model_path() -> Path:
+    configured = os.environ.get("LOCAL_AGENT_RELAY_GEMMA_MODEL")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return Path(
+        "/Users/boom/.cache/huggingface/hub/"
+        "models--mlx-community--gemma-4-12B-it-4bit/"
+        "snapshots/8de8ab4d40f6b95a76ffa491e23dd430e1f725b5"
+    )
+
+
+def python_bin() -> str:
+    return os.environ.get("LOCAL_AGENT_RELAY_PYTHON", "/opt/homebrew/bin/python3.10")
