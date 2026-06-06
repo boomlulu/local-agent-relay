@@ -1,0 +1,36 @@
+project_type: unity
+pipeline_name: unity-basic
+
+execute:
+  adapter: claude-code
+  timeout_seconds: 1800
+
+validate:
+  - name: git-diff-check
+    adapter: git-diff-check
+  - name: unity-editmode-tests
+    adapter: shell-command
+    command: >
+      /Applications/Unity/Hub/Editor/2022.3.62f3/Unity.app/Contents/MacOS/Unity
+      -batchmode
+      -quit
+      -projectPath ${PROJECT_ROOT}
+      -runTests
+      -testPlatform EditMode
+      -logFile ${ARTIFACT_DIR}/unity-editmode.log
+  - name: unity-log-error-scan
+    adapter: log-error-scan
+    input: ${ARTIFACT_DIR}/unity-editmode.log
+
+report:
+  adapter: gemma-summary
+  include:
+    - executor_summary
+    - changed_files
+    - validation_logs
+
+notify:
+  - dashboard
+  - macos
+  - voice
+

@@ -1,0 +1,37 @@
+project_type: web
+pipeline_name: web-basic
+
+execute:
+  adapter: claude-code
+  timeout_seconds: 1800
+
+validate:
+  - name: git-diff-check
+    adapter: git-diff-check
+  - name: install-check
+    adapter: shell-command
+    command: npm install
+  - name: unit-tests
+    adapter: shell-command
+    command: npm test
+  - name: production-build
+    adapter: shell-command
+    command: npm run build
+  - name: browser-smoke
+    adapter: playwright
+    url: http://localhost:3000
+    screenshot: true
+
+report:
+  adapter: gemma-summary
+  include:
+    - executor_summary
+    - changed_files
+    - validation_logs
+    - screenshots
+
+notify:
+  - dashboard
+  - macos
+  - voice
+
