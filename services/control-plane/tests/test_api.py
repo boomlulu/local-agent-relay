@@ -20,6 +20,8 @@ def test_root_page() -> None:
     assert response.status_code == 200
     assert "Local Agent Relay" in response.text
     assert "/docs" in response.text
+    assert "创建任务" in response.text
+    assert "taskForm" in response.text
 
 
 def test_shell_task_lifecycle() -> None:
