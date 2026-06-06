@@ -11,6 +11,17 @@ from app.db import init_db  # noqa: E402
 from app.main import app  # noqa: E402
 
 
+def test_root_page() -> None:
+    init_db()
+    client = TestClient(app)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Local Agent Relay" in response.text
+    assert "/docs" in response.text
+
+
 def test_shell_task_lifecycle() -> None:
     init_db()
     client = TestClient(app)
@@ -33,4 +44,3 @@ def test_shell_task_lifecycle() -> None:
     assert detail["status"] == "completed"
     assert detail["exit_code"] == 0
     assert any("hello from test" in log["message"] for log in detail["logs"])
-
