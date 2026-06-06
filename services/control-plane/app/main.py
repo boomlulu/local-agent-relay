@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from .config import APP_NAME, db_path
 from .dashboard import render_dashboard
 from .db import init_db
-from .executors import run_task
+from .orchestrator import run_task
 from .repository import create_task, get_task, list_logs, list_tasks
 from .schemas import CreateTaskRequest, LogRecord, TaskRecord, TaskWithLogs
 

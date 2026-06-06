@@ -56,3 +56,12 @@ class LogRecord(BaseModel):
 
 class TaskWithLogs(TaskRecord):
     logs: list[LogRecord]
+
+
+class ExecutorResult(BaseModel):
+    status: Literal["completed", "failed_execution", "timeout"]
+    summary: str | None = None
+    exit_code: int | None = None
+    error: str | None = None
+    changed_files: list[str] = Field(default_factory=list)
+    artifacts: list[str] = Field(default_factory=list)
