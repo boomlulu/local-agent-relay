@@ -604,6 +604,23 @@ def render_dashboard() -> str:
             }
           }
 
+          function validationIcon(status) {
+            if (status === "passed") return "✅";
+            if (status === "failed") return "❌";
+            return "⏭️";
+          }
+          function renderValidations(items) {
+            if (!items || !items.length) return "";
+            const rows = items.map((v) =>
+              `<div class="info-row"><strong>${validationIcon(v.status)} ${escapeHtml(v.name)}</strong><span>${escapeHtml(v.adapter)} · ${escapeHtml(v.status)} — ${escapeHtml(v.detail || "")}</span></div>`
+            ).join("");
+            return `<h3 style="font-size:16px;margin:18px 0 8px;">验收结果</h3><div class="info-list">${rows}</div>`;
+          }
+          function renderReport(report) {
+            if (!report) return "";
+            return `<h3 style="font-size:16px;margin:18px 0 8px;">执行报告</h3><pre>${escapeHtml(report)}</pre>`;
+          }
+
           async function loadTaskDetail(taskId) {
             const task = await fetchJson(`/tasks/${taskId}`);
             state.selectedTaskId = task.id;
@@ -619,6 +636,8 @@ def render_dashboard() -> str:
                 <div class="info-row"><strong>结果</strong><span>${escapeHtml(task.summary || task.error || "等待结果")}</span></div>
                 <div class="info-row"><strong>指令</strong><span>${escapeHtml(task.instruction)}</span></div>
               </div>
+              ${renderValidations(task.validations)}
+              ${renderReport(task.report)}
               <details>
                 <summary>技术信息</summary>
                 <div class="details-body">

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .executors import run_gemma_task, run_shell_task
+from .notifiers import run_notifiers
 from .pipelines import resolve_pipeline
 from .reporter import make_report
 from .repository import add_log, get_task, now_iso, update_task
@@ -53,16 +54,20 @@ def run_task(task_id: str) -> None:
             error="validation failed: " + ", ".join(failed_names),
             finished_at=now_iso(),
         )
-        return
+    else:
+        update_task(
+            task_id,
+            status=TaskStatus.completed.value,
+            summary=result.summary,
+            exit_code=result.exit_code,
+            error=None,
+            finished_at=now_iso(),
+        )
 
-    update_task(
-        task_id,
-        status=TaskStatus.completed.value,
-        summary=result.summary,
-        exit_code=result.exit_code,
-        error=None,
-        finished_at=now_iso(),
-    )
+    if pipeline:
+        final_task = get_task(task_id)
+        if final_task:
+            run_notifiers(final_task, pipeline)
 
 
 def _finalize_execute(task_id: str, result: ExecutorResult) -> None:

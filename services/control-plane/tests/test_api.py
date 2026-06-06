@@ -26,6 +26,8 @@ def test_root_page() -> None:
     assert "高级设置" in response.text
     assert "执行日志" in response.text
     assert "taskForm" in response.text
+    assert "验收结果" in response.text
+    assert "执行报告" in response.text
 
 
 def test_shell_task_lifecycle() -> None:
