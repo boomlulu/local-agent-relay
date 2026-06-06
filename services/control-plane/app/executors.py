@@ -27,6 +27,7 @@ def build_gemma_prompt(instruction: str) -> str:
 def run_gemma_task(task: TaskRecord) -> ExecutorResult:
     cwd = Path(task.project_root).expanduser().resolve() if task.project_root else default_workdir()
     timeout = int(os.environ.get("LOCAL_AGENT_RELAY_GEMMA_TIMEOUT", "240"))
+    max_tokens = int(os.environ.get("LOCAL_AGENT_RELAY_GEMMA_MAX_TOKENS", "1024"))
 
     add_log(task.id, "system", f"executor=gemma cwd={cwd}")
     add_log(task.id, "system", f"model={gemma_model_path()}")
@@ -35,7 +36,7 @@ def run_gemma_task(task: TaskRecord) -> ExecutorResult:
 
     call = run_gemma(
         build_gemma_prompt(task.instruction),
-        max_tokens=500,
+        max_tokens=max_tokens,
         timeout_seconds=timeout,
         cwd=str(cwd),
         image=task.image_path,
