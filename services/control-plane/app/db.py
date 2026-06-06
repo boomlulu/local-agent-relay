@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   started_at TEXT,
-  finished_at TEXT
+  finished_at TEXT,
+  report TEXT
 );
 
 CREATE TABLE IF NOT EXISTS logs (
@@ -68,6 +69,9 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
 def init_db(path: Path | None = None) -> None:
     with connect(path) as conn:
         conn.executescript(SCHEMA)
+        cols = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
+        if "report" not in cols:
+            conn.execute("ALTER TABLE tasks ADD COLUMN report TEXT")
 
 
 @contextmanager

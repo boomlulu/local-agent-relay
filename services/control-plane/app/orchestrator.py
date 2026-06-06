@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .executors import run_gemma_task, run_shell_task
 from .pipelines import resolve_pipeline
+from .reporter import make_report
 from .repository import add_log, get_task, now_iso, update_task
 from .schemas import ExecutorResult, TaskStatus
 from .validators import run_validations
@@ -32,11 +33,16 @@ def run_task(task_id: str) -> None:
         return
 
     pipeline = resolve_pipeline(task.pipeline)
+    outcomes: list = []
     failed_names: list[str] = []
-    if pipeline and pipeline.validate_steps:
-        update_task(task_id, status=TaskStatus.validating.value)
-        outcomes = run_validations(task, pipeline)
-        failed_names = [o.name for o in outcomes if o.status == "failed"]
+    if pipeline:
+        if pipeline.validate_steps:
+            update_task(task_id, status=TaskStatus.validating.value)
+            outcomes = run_validations(task, pipeline)
+            failed_names = [o.name for o in outcomes if o.status == "failed"]
+        update_task(task_id, status=TaskStatus.reporting.value)
+        report_text = make_report(task, pipeline, result.summary, outcomes)
+        update_task(task_id, report=report_text)
 
     if failed_names:
         update_task(

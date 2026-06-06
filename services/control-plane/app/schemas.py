@@ -44,6 +44,7 @@ class TaskRecord(BaseModel):
     updated_at: str
     started_at: str | None
     finished_at: str | None
+    report: str | None = None
 
 
 class LogRecord(BaseModel):

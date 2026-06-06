@@ -5,7 +5,8 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from .config import default_workdir, gemma_model_path, python_bin
+from .config import default_workdir, gemma_model_path
+from .gemma import run_gemma
 from .repository import add_log
 from .schemas import ExecutorResult, TaskRecord
 
@@ -24,69 +25,48 @@ def build_gemma_prompt(instruction: str) -> str:
 
 
 def run_gemma_task(task: TaskRecord) -> ExecutorResult:
-    model_path = gemma_model_path()
     cwd = Path(task.project_root).expanduser().resolve() if task.project_root else default_workdir()
-    timeout_seconds = int(os.environ.get("LOCAL_AGENT_RELAY_GEMMA_TIMEOUT", "240"))
+    timeout = int(os.environ.get("LOCAL_AGENT_RELAY_GEMMA_TIMEOUT", "240"))
 
     add_log(task.id, "system", f"executor=gemma cwd={cwd}")
-    add_log(task.id, "system", f"model={model_path}")
+    add_log(task.id, "system", f"model={gemma_model_path()}")
 
-    if not model_path.exists():
-        message = f"Gemma model path does not exist: {model_path}"
-        add_log(task.id, "error", message)
-        return ExecutorResult(status="failed_execution", error=message)
-
-    command = [
-        python_bin(),
-        "-m",
-        "mlx_vlm.generate",
-        "--model",
-        str(model_path),
-        "--prompt",
+    call = run_gemma(
         build_gemma_prompt(task.instruction),
-        "--max-tokens",
-        "500",
-        "--temperature",
-        "0.2",
-        "--no-verbose",
-    ]
+        max_tokens=500,
+        timeout_seconds=timeout,
+        cwd=str(cwd),
+    )
 
-    try:
-        proc = subprocess.Popen(
-            command,
-            cwd=str(cwd),
-            env=os.environ.copy(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        stdout, stderr = proc.communicate(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        stdout, stderr = proc.communicate()
-        if stdout:
-            add_log(task.id, "stdout", stdout.rstrip())
-        if stderr:
-            add_log(task.id, "stderr", stderr.rstrip())
-        message = f"Gemma task timed out after {timeout_seconds} seconds"
+    if call.status == "model_missing":
+        add_log(task.id, "error", call.error)
+        return ExecutorResult(status="failed_execution", error=call.error)
+
+    if call.status == "timeout":
+        if call.stdout:
+            add_log(task.id, "stdout", call.stdout.rstrip())
+        if call.stderr:
+            add_log(task.id, "stderr", call.stderr.rstrip())
+        message = f"Gemma task timed out after {timeout} seconds"
         add_log(task.id, "error", message)
         return ExecutorResult(status="timeout", error=message)
-    except Exception as exc:
-        add_log(task.id, "error", str(exc))
-        return ExecutorResult(status="failed_execution", error=str(exc))
 
-    answer = stdout.strip()
+    if call.status == "failed" and call.returncode is None:
+        add_log(task.id, "error", call.error)
+        return ExecutorResult(status="failed_execution", error=call.error)
+
+    answer = call.stdout.strip()
     if answer:
         add_log(task.id, "stdout", answer)
-    if stderr:
-        add_log(task.id, "stderr", stderr.rstrip())
+    if call.stderr:
+        add_log(task.id, "stderr", call.stderr.rstrip())
 
-    rc = proc.returncode
+    rc = call.returncode
     return ExecutorResult(
         status="completed" if rc == 0 else "failed_execution",
         summary=answer or "Gemma task completed",
         exit_code=rc,
-        error=None if rc == 0 else (stderr.strip() or "Gemma task failed"),
+        error=None if rc == 0 else (call.stderr.strip() or "Gemma task failed"),
     )
 
 
