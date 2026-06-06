@@ -20,17 +20,16 @@ def test_root_page() -> None:
     assert response.status_code == 200
     assert "Local Agent Relay" in response.text
     assert "/docs" in response.text
-    assert "现在关注" in response.text
-    assert "创建任务" in response.text
-    assert "Gemma 本地助手" in response.text
-    assert "高级设置" in response.text
-    assert "执行日志" in response.text
     assert "taskForm" in response.text
+    assert 'id="pipeline"' in response.text
+    assert "不验收" in response.text
+    assert "高级" in response.text
+    assert "Gemma 本地助手" in response.text
     assert "验收结果" in response.text
     assert "执行报告" in response.text
-    assert "验收管线" in response.text
-    assert "不验收" in response.text
-    assert 'id="pipeline"' in response.text
+    assert "执行日志" in response.text
+    assert "想让 Agent 做什么" in response.text
+    assert "图片" in response.text
 
 
 def test_list_pipelines() -> None:
