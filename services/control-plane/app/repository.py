@@ -17,7 +17,7 @@ def row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     return {key: row[key] for key in row.keys()}
 
 
-def create_task(payload: CreateTaskRequest) -> TaskRecord:
+def create_task(payload: CreateTaskRequest, image_path: str | None = None) -> TaskRecord:
     task_id = str(uuid.uuid4())
     now = now_iso()
     with session() as conn:
@@ -25,9 +25,9 @@ def create_task(payload: CreateTaskRequest) -> TaskRecord:
             """
             INSERT INTO tasks (
               id, title, instruction, executor, command, project_root,
-              pipeline, status, created_at, updated_at
+              pipeline, status, created_at, updated_at, image_path
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 task_id,
@@ -40,6 +40,7 @@ def create_task(payload: CreateTaskRequest) -> TaskRecord:
                 TaskStatus.created.value,
                 now,
                 now,
+                image_path,
             ),
         )
     task = get_task(task_id)

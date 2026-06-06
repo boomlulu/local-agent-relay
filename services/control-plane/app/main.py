@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import uuid
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
@@ -7,7 +9,7 @@ import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
-from .config import APP_NAME, db_path
+from .config import APP_NAME, db_path, uploads_dir
 from .dashboard import render_dashboard
 from .db import init_db
 from .orchestrator import run_task
@@ -62,9 +64,34 @@ def get_pipelines() -> list[PipelineSummary]:
     return sorted(items, key=lambda x: x.pipeline_name)
 
 
+def _save_image(image_base64: str | None) -> str | None:
+    if not image_base64:
+        return None
+    try:
+        raw = image_base64
+        ext = "png"
+        if raw.startswith("data:"):
+            header, raw = raw.split(",", 1)
+            if "image/jpeg" in header or "image/jpg" in header:
+                ext = "jpg"
+            elif "image/webp" in header:
+                ext = "webp"
+            elif "image/gif" in header:
+                ext = "gif"
+            elif "image/png" in header:
+                ext = "png"
+        data = base64.b64decode(raw)
+        path = uploads_dir() / f"{uuid.uuid4()}.{ext}"
+        path.write_bytes(data)
+        return str(path)
+    except Exception:
+        return None
+
+
 @app.post("/tasks", response_model=TaskRecord, status_code=201)
 def post_task(payload: CreateTaskRequest, background_tasks: BackgroundTasks) -> TaskRecord:
-    task = create_task(payload)
+    image_path = _save_image(payload.image_base64)
+    task = create_task(payload, image_path=image_path)
     background_tasks.add_task(run_task, task.id)
     return task
 

@@ -30,12 +30,15 @@ def run_gemma_task(task: TaskRecord) -> ExecutorResult:
 
     add_log(task.id, "system", f"executor=gemma cwd={cwd}")
     add_log(task.id, "system", f"model={gemma_model_path()}")
+    if task.image_path:
+        add_log(task.id, "system", f"image={task.image_path}")
 
     call = run_gemma(
         build_gemma_prompt(task.instruction),
         max_tokens=500,
         timeout_seconds=timeout,
         cwd=str(cwd),
+        image=task.image_path,
     )
 
     if call.status == "model_missing":

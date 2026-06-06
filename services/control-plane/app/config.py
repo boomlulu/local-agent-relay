@@ -22,6 +22,13 @@ def db_path() -> Path:
     return service_root() / "data" / "control_plane.sqlite3"
 
 
+def uploads_dir() -> Path:
+    configured = os.environ.get("LOCAL_AGENT_RELAY_UPLOADS")
+    base = Path(configured).expanduser().resolve() if configured else service_root() / "data" / "uploads"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
 def default_workdir() -> Path:
     configured = os.environ.get("LOCAL_AGENT_RELAY_WORKDIR")
     if configured:

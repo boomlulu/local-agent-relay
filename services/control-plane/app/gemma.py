@@ -21,6 +21,7 @@ def run_gemma(
     max_tokens: int = 500,
     timeout_seconds: int = 240,
     cwd: str | None = None,
+    image: str | None = None,
 ) -> GemmaCall:
     model = gemma_model_path()
     if not model.exists():
@@ -34,6 +35,10 @@ def run_gemma(
         "mlx_vlm.generate",
         "--model",
         str(model),
+    ]
+    if image:
+        cmd += ["--image", image]
+    cmd += [
         "--prompt",
         prompt,
         "--max-tokens",

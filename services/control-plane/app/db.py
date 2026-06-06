@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TEXT NOT NULL,
   started_at TEXT,
   finished_at TEXT,
-  report TEXT
+  report TEXT,
+  image_path TEXT
 );
 
 CREATE TABLE IF NOT EXISTS logs (
@@ -72,6 +73,8 @@ def init_db(path: Path | None = None) -> None:
         cols = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
         if "report" not in cols:
             conn.execute("ALTER TABLE tasks ADD COLUMN report TEXT")
+        if "image_path" not in cols:
+            conn.execute("ALTER TABLE tasks ADD COLUMN image_path TEXT")
 
 
 @contextmanager

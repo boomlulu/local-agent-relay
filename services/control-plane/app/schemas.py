@@ -33,6 +33,7 @@ class CreateTaskRequest(BaseModel):
     command: str | None = None
     project_root: str | None = None
     pipeline: str | None = None
+    image_base64: str | None = None
 
 
 class TaskRecord(BaseModel):
@@ -52,6 +53,7 @@ class TaskRecord(BaseModel):
     started_at: str | None
     finished_at: str | None
     report: str | None = None
+    image_path: str | None = None
 
 
 class LogRecord(BaseModel):
