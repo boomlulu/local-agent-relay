@@ -4,14 +4,13 @@ from .executors import run_gemma_task, run_shell_task
 from .pipelines import resolve_pipeline
 from .repository import add_log, get_task, now_iso, update_task
 from .schemas import ExecutorResult, TaskStatus
+from .validators import run_validations
 
 
 def run_task(task_id: str) -> None:
     task = get_task(task_id)
     if task is None:
         return
-    pipeline = resolve_pipeline(task.pipeline)  # reserved for Step2+, unused-ok now
-    _ = pipeline
     update_task(task_id, status=TaskStatus.executing.value, started_at=now_iso())
     if task.executor == "gemma":
         result = run_gemma_task(task)
@@ -27,7 +26,37 @@ def run_task(task_id: str) -> None:
             finished_at=now_iso(),
         )
         return
-    _finalize_execute(task_id, result)
+
+    if result.status != "completed":
+        _finalize_execute(task_id, result)
+        return
+
+    pipeline = resolve_pipeline(task.pipeline)
+    failed_names: list[str] = []
+    if pipeline and pipeline.validate_steps:
+        update_task(task_id, status=TaskStatus.validating.value)
+        outcomes = run_validations(task, pipeline)
+        failed_names = [o.name for o in outcomes if o.status == "failed"]
+
+    if failed_names:
+        update_task(
+            task_id,
+            status=TaskStatus.failed_validation.value,
+            summary=result.summary,
+            exit_code=result.exit_code,
+            error="validation failed: " + ", ".join(failed_names),
+            finished_at=now_iso(),
+        )
+        return
+
+    update_task(
+        task_id,
+        status=TaskStatus.completed.value,
+        summary=result.summary,
+        exit_code=result.exit_code,
+        error=None,
+        finished_at=now_iso(),
+    )
 
 
 def _finalize_execute(task_id: str, result: ExecutorResult) -> None:

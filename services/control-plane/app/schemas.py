@@ -54,8 +54,20 @@ class LogRecord(BaseModel):
     created_at: str
 
 
+class ValidationRecord(BaseModel):
+    id: int
+    task_id: str
+    name: str
+    adapter: str
+    status: str
+    detail: str | None
+    exit_code: int | None
+    created_at: str
+
+
 class TaskWithLogs(TaskRecord):
     logs: list[LogRecord]
+    validations: list[ValidationRecord] = Field(default_factory=list)
 
 
 class ExecutorResult(BaseModel):

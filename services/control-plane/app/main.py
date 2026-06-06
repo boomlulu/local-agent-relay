@@ -11,8 +11,20 @@ from .config import APP_NAME, db_path
 from .dashboard import render_dashboard
 from .db import init_db
 from .orchestrator import run_task
-from .repository import create_task, get_task, list_logs, list_tasks
-from .schemas import CreateTaskRequest, LogRecord, TaskRecord, TaskWithLogs
+from .repository import (
+    create_task,
+    get_task,
+    list_logs,
+    list_tasks,
+    list_validations,
+)
+from .schemas import (
+    CreateTaskRequest,
+    LogRecord,
+    TaskRecord,
+    TaskWithLogs,
+    ValidationRecord,
+)
 
 
 @asynccontextmanager
@@ -52,7 +64,8 @@ def get_task_detail(task_id: str) -> TaskWithLogs:
     if task is None:
         raise HTTPException(status_code=404, detail="task not found")
     logs = [LogRecord(**row) for row in list_logs(task_id)]
-    return TaskWithLogs(**task.model_dump(), logs=logs)
+    validations = [ValidationRecord(**row) for row in list_validations(task_id)]
+    return TaskWithLogs(**task.model_dump(), logs=logs, validations=validations)
 
 
 @app.get("/tasks/{task_id}/logs", response_model=list[LogRecord])
@@ -60,6 +73,13 @@ def get_task_logs(task_id: str) -> list[LogRecord]:
     if get_task(task_id) is None:
         raise HTTPException(status_code=404, detail="task not found")
     return [LogRecord(**row) for row in list_logs(task_id)]
+
+
+@app.get("/tasks/{task_id}/validations", response_model=list[ValidationRecord])
+def get_task_validations(task_id: str) -> list[ValidationRecord]:
+    if get_task(task_id) is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    return [ValidationRecord(**row) for row in list_validations(task_id)]
 
 
 def run() -> None:

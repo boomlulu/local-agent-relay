@@ -89,3 +89,31 @@ def list_logs(task_id: str) -> list[dict[str, Any]]:
         ).fetchall()
     return [row_to_dict(row) for row in rows]
 
+
+def add_validation(
+    task_id: str,
+    name: str,
+    adapter: str,
+    status: str,
+    detail: str | None,
+    exit_code: int | None,
+) -> None:
+    with session() as conn:
+        conn.execute(
+            """
+            INSERT INTO validations (
+              task_id, name, adapter, status, detail, exit_code, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (task_id, name, adapter, status, detail, exit_code, now_iso()),
+        )
+
+
+def list_validations(task_id: str) -> list[dict[str, Any]]:
+    with session() as conn:
+        rows = conn.execute(
+            "SELECT * FROM validations WHERE task_id = ? ORDER BY id ASC", (task_id,)
+        ).fetchall()
+    return [row_to_dict(row) for row in rows]
+

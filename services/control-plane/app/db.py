@@ -40,6 +40,19 @@ CREATE TABLE IF NOT EXISTS logs (
 
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 CREATE INDEX IF NOT EXISTS idx_logs_task_id_id ON logs(task_id, id);
+
+CREATE TABLE IF NOT EXISTS validations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  adapter TEXT NOT NULL,
+  status TEXT NOT NULL,
+  detail TEXT,
+  exit_code INTEGER,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_validations_task_id ON validations(task_id, id);
 """
 
 
