@@ -28,6 +28,17 @@ def _env(tmp_path, monkeypatch):
         "  - voice\n",
         encoding="utf-8",
     )
+    (pdir / "test-notify-fail.yaml").write_text(
+        "pipeline_name: test-notify-fail\n"
+        "project_type: test\n"
+        "validate:\n"
+        "  - name: must-fail\n"
+        "    adapter: shell-command\n"
+        '    command: "false"\n'
+        "notify:\n"
+        "  - dashboard\n",
+        encoding="utf-8",
+    )
     monkeypatch.setenv("LOCAL_AGENT_RELAY_PIPELINES_DIR", str(pdir))
     from app.db import init_db
 
@@ -79,3 +90,53 @@ def test_no_pipeline_no_notify() -> None:
     detail = client.get(f"/tasks/{task_id}").json()
     assert detail["status"] == "completed"
     assert not any(log["stream"] == "notify" for log in detail["logs"])
+
+
+def test_voice_text_pass() -> None:
+    from app import notifiers
+    from app.repository import get_task
+
+    client = TestClient(app)
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "通过任务",
+            "instruction": "do it",
+            "executor": "shell",
+            "command": "echo hi",
+            "pipeline": "test-notify",
+        },
+    )
+    assert response.status_code == 201
+    tid = response.json()["id"]
+
+    task = get_task(tid)
+    assert task.status.value == "completed"
+    msg = notifiers._voice_text(task)
+    assert task.title in msg and "验收通过" in msg
+
+
+def test_voice_text_fail() -> None:
+    from app import notifiers
+    from app.repository import get_task
+
+    client = TestClient(app)
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "失败任务",
+            "instruction": "do it",
+            "executor": "shell",
+            "command": "echo hi",
+            "pipeline": "test-notify-fail",
+        },
+    )
+    assert response.status_code == 201
+    tid = response.json()["id"]
+
+    task = get_task(tid)
+    assert task.status.value == "failed_validation"
+    msg = notifiers._voice_text(task)
+    assert "验收失败" in msg and "must-fail" in msg
+    body = notifiers._macos_body(task)
+    assert "❌" in body and "must-fail" in body
