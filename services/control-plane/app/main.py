@@ -11,6 +11,7 @@ from .config import APP_NAME, db_path
 from .dashboard import render_dashboard
 from .db import init_db
 from .orchestrator import run_task
+from .pipelines import load_pipelines
 from .repository import (
     create_task,
     get_task,
@@ -21,6 +22,7 @@ from .repository import (
 from .schemas import (
     CreateTaskRequest,
     LogRecord,
+    PipelineSummary,
     TaskRecord,
     TaskWithLogs,
     ValidationRecord,
@@ -44,6 +46,20 @@ def index() -> str:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "db": str(db_path())}
+
+
+@app.get("/pipelines", response_model=list[PipelineSummary])
+def get_pipelines() -> list[PipelineSummary]:
+    items = [
+        PipelineSummary(
+            pipeline_name=p.pipeline_name,
+            project_type=p.project_type,
+            validators=len(p.validate_steps),
+            notify=p.notify,
+        )
+        for p in load_pipelines().values()
+    ]
+    return sorted(items, key=lambda x: x.pipeline_name)
 
 
 @app.post("/tasks", response_model=TaskRecord, status_code=201)

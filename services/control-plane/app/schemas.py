@@ -19,6 +19,13 @@ class TaskStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class PipelineSummary(BaseModel):
+    pipeline_name: str
+    project_type: str
+    validators: int
+    notify: list[str]
+
+
 class CreateTaskRequest(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     instruction: str = Field(min_length=1)

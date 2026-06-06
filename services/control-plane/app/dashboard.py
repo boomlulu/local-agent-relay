@@ -399,6 +399,12 @@ def render_dashboard() -> str:
                 想让 Agent 做什么
                 <textarea id="instruction" name="instruction" required>告诉我现在几点了</textarea>
               </label>
+              <label>
+                验收管线 (Pipeline)
+                <select id="pipeline" name="pipeline">
+                  <option value="">不验收（仅执行）</option>
+                </select>
+              </label>
               <button id="submitButton" class="primary" type="submit">创建并执行</button>
             </form>
             <details>
@@ -463,6 +469,7 @@ def render_dashboard() -> str:
           const focusMessage = document.querySelector("#focusMessage");
           const executorSelect = document.querySelector("#executor");
           const shellSettings = document.querySelector("#shellSettings");
+          const pipelineSelect = document.querySelector("#pipeline");
 
           function escapeHtml(value) {
             return String(value ?? "")
@@ -580,6 +587,19 @@ def render_dashboard() -> str:
             }
           }
 
+          async function loadPipelines() {
+            try {
+              const pipelines = await fetchJson("/pipelines");
+              const current = pipelineSelect.value;
+              pipelineSelect.innerHTML = `<option value="">不验收（仅执行）</option>` + pipelines.map((p) =>
+                `<option value="${escapeHtml(p.pipeline_name)}">${escapeHtml(p.pipeline_name)} — ${escapeHtml(p.project_type)} · ${p.validators} 验收</option>`
+              ).join("");
+              pipelineSelect.value = current;
+            } catch (error) {
+              console.error(error);
+            }
+          }
+
           async function loadTasks() {
             const tasks = await fetchJson("/tasks");
             state.tasks = tasks;
@@ -678,6 +698,9 @@ def render_dashboard() -> str:
               if (payload.executor === "shell") {
                 payload.command = document.querySelector("#command").value;
               }
+              if (pipelineSelect.value) {
+                payload.pipeline = pipelineSelect.value;
+              }
               const task = await fetchJson("/tasks", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -707,6 +730,7 @@ def render_dashboard() -> str:
           });
 
           async function startPolling() {
+            await loadPipelines();
             await loadTasks();
             state.pollTimer = window.setInterval(() => {
               loadTasks().catch(console.error);

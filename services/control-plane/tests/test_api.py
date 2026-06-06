@@ -28,6 +28,22 @@ def test_root_page() -> None:
     assert "taskForm" in response.text
     assert "验收结果" in response.text
     assert "执行报告" in response.text
+    assert "验收管线" in response.text
+    assert "不验收" in response.text
+    assert 'id="pipeline"' in response.text
+
+
+def test_list_pipelines() -> None:
+    init_db()
+    client = TestClient(app)
+    resp = client.get("/pipelines")
+    assert resp.status_code == 200
+    data = resp.json()
+    names = {p["pipeline_name"] for p in data}
+    assert "demo-smoke" in names
+    demo = next(p for p in data if p["pipeline_name"] == "demo-smoke")
+    assert demo["validators"] == 2
+    assert "macos" in demo["notify"]
 
 
 def test_shell_task_lifecycle() -> None:

@@ -1,0 +1,12 @@
+project_type: demo
+pipeline_name: demo-smoke
+validate:
+  - name: repo-diff
+    adapter: git-diff-check
+  - name: smoke-echo
+    adapter: shell-command
+    command: echo "hello from validator" && true
+notify:
+  - dashboard
+  - macos
+  - voice
